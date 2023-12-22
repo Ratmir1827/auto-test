@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS rent (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    car_id INT NOT NULL,
+    start TIMESTAMP NOT NULL,
+    end_rent TIMESTAMP NOT NULL
+);
