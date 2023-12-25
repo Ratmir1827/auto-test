@@ -32,12 +32,15 @@ export class CarService {
       throw new ExistingDataException('This car has alredy been added!');
     }
 
-    await this.carRepository.addCar(addCarDto);
+    const addCar = await this.carRepository.addCar(addCarDto);
+
+    console.log(addCar);
 
     return {
-      name: addCarDto.name,
-      number: addCarDto.number,
-      status: 'free',
+      id: addCar?.id,
+      name: addCar.name,
+      number: addCar.number,
+      status: addCar.status,
     };
   }
 }
