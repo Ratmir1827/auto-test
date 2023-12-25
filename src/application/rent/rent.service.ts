@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RentRepository } from './rent.repository';
-import { RentDto } from 'src/dto/rent/rent.dto';
+import { RentDto } from 'src/application/rent/dto/rent.dto';
+import { RentInfoInterface } from './interfaces/rent-info.interface';
+import { RentalException } from 'src/exceptions/rental-time.exception';
+import { RentInterface } from './interfaces/rent.interface';
+import { CalculateInterface } from './interfaces/calculate.interface';
 
 @Injectable()
 export class RentService {
   constructor(private readonly rentRepository: RentRepository) {}
 
-  async checkAuto(req, carId: string) {
+  async checkAuto(req, carId: string): Promise<RentInfoInterface> {
     const findUser = await this.rentRepository.findUser(req.user.id);
 
     if (!findUser) {
@@ -44,7 +48,11 @@ export class RentService {
     };
   }
 
-  async calculate(req, carId: string, rentDto: RentDto) {
+  async calculate(
+    req,
+    carId: string,
+    rentDto: RentDto,
+  ): Promise<RentInterface> {
     const findUser = await this.rentRepository.findUser(req.user.id);
 
     if (!findUser) {
@@ -59,37 +67,20 @@ export class RentService {
 
     const rentPrice = await this.calculatePrice(rentDto.days);
 
-    if (
-      rentPrice === 'Minimum rental period 1 day' ||
-      rentPrice === 'Maximum rental period 30 days'
-    ) {
-      return rentPrice;
-    }
-
     return {
-      user: findUser.id,
       username: findUser.username,
-      car: findCar.id,
       car_number: findCar.number,
-      days: rentDto.days,
-      price: rentPrice,
+      price: rentPrice.price,
     };
   }
 
-  async rent(carId: string, req, rentDto: RentDto) {
+  async rent(carId: string, req, rentDto: RentDto): Promise<RentInterface> {
     const startDate = new Date();
     const endDate = new Date(startDate);
 
     await this.rentRepository.checkEndedReservation();
 
     const rentPrice = await this.calculatePrice(rentDto.days);
-
-    if (
-      rentPrice === 'Minimum rental period 1 day' ||
-      rentPrice === 'Maximum rental period 30 days'
-    ) {
-      return rentPrice;
-    }
 
     const findUser = await this.rentRepository.findUser(req.user.id);
 
@@ -107,7 +98,7 @@ export class RentService {
       await this.rentRepository.checkExistReservation(findUser.id);
 
     if (findExistReservation) {
-      return 'You have already rented a car!';
+      throw new RentalException('You have already rented a car!');
     }
 
     const checkCarReservation = await this.rentRepository.checkReservation(
@@ -115,15 +106,7 @@ export class RentService {
     );
 
     if (checkCarReservation) {
-      return 'This car has already been in reserved!';
-    }
-
-    const checkUserStatus = await this.rentRepository.checkUserStatus(
-      findUser.id,
-    );
-
-    if (checkUserStatus === 'blocked') {
-      return 'This user in blocked now!';
+      throw new RentalException('This car has already been in reserved!');
     }
 
     const userId = findUser.id;
@@ -132,17 +115,17 @@ export class RentService {
     await this.rentRepository.rent(userId, carId, startDate, endDate);
 
     return {
-      user: findUser.username,
-      price: rentPrice,
-      car: findCar.number,
+      username: findUser.username,
+      car_number: findCar.number,
+      price: rentPrice.price,
     };
   }
 
-  async calculatePrice(days: number) {
+  async calculatePrice(days: number): Promise<CalculateInterface> {
     let rentalCost = 1000 * days;
 
-    if (days === 1) {
-      return 'Minimum rental period 1 day';
+    if (days === 0) {
+      throw new RentalException(`Minimum rental period 1 day`);
     } else if (days >= 5 && days <= 9) {
       rentalCost -= rentalCost * 0.05;
     } else if (days >= 10 && days <= 17) {
@@ -150,9 +133,11 @@ export class RentService {
     } else if (days >= 18 && days <= 29) {
       rentalCost -= rentalCost * 0.15;
     } else if (days > 30) {
-      return 'Maximum rental period 30 days';
+      throw new RentalException(`Maximum rental period 30 days`);
     }
 
-    return rentalCost;
+    return {
+      price: rentalCost,
+    };
   }
 }

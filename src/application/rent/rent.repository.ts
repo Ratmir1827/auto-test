@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
+import { FindUserInterface } from './interfaces/find-user.interface';
+import { FindCarInterface } from './interfaces/find-car.interface';
 
 @Injectable()
 export class RentRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findUser(id: string) {
+  async findUser(id: string): Promise<FindUserInterface> {
     const findUser = await this.databaseService.query(
       'SELECT * FROM users WHERE id = $1',
       [id],
@@ -20,7 +22,7 @@ export class RentRepository {
     );
   }
 
-  async findCar(carId: string) {
+  async findCar(carId: string): Promise<FindCarInterface> {
     const findCar = await this.databaseService.query(
       'SELECT * FROM cars WHERE id = $1',
       [carId],
@@ -29,7 +31,7 @@ export class RentRepository {
     return findCar[0];
   }
 
-  async checkExistReservation(userId: string) {
+  async checkExistReservation(userId: string): Promise<[]> {
     const findExist = await this.databaseService.query(
       'SELECT * FROM rent WHERE user_id = $1',
       [userId],
@@ -38,7 +40,7 @@ export class RentRepository {
     return findExist[0];
   }
 
-  async checkReservation(id: string) {
+  async checkReservation(id: string): Promise<[]> {
     const findReservation = await this.databaseService.query(
       'SELECT * FROM rent WHERE car_id = $1',
       [id],
@@ -47,16 +49,12 @@ export class RentRepository {
     return findReservation[0];
   }
 
-  async checkUserStatus(id: string) {
-    const findUserStatus = await this.databaseService.query(
-      'SELECT * FROM user_status WHERE user = $1',
-      [id],
-    );
-
-    return findUserStatus[0];
-  }
-
-  async rent(userId: string, carId: string, startDate: Date, endDate: Date) {
+  async rent(
+    userId: string,
+    carId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<[]> {
     const rentCar = await this.databaseService.query(
       'INSERT INTO rent (user_id, car_id, start, end_rent) VALUES ($1, $2, $3, $4)',
       [userId, carId, startDate, endDate],

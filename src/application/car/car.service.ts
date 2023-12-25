@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CarRepository } from './car.repository';
-import { AddCarDto } from 'src/dto/car/add-car.dto';
+import { AddCarDto } from 'src/application/car/dto/add-car.dto';
+import { CarInfoInterface } from './interfaces/car-info.interface';
+import { ExistingDataException } from 'src/exceptions/existing-data.exceptions';
+import { AddCarInterface } from './interfaces/add-car.interface';
 
 @Injectable()
 export class CarService {
   constructor(private readonly carRepository: CarRepository) {}
 
-  async getCarInfo(id: string) {
+  async getCarInfo(id: string): Promise<CarInfoInterface> {
     const findCarById = await this.carRepository.findCarById(id);
 
     if (!findCarById) {
@@ -20,11 +23,13 @@ export class CarService {
     };
   }
 
-  async addCar(addCarDto: AddCarDto) {
-    const findExistedCar = await this.carRepository.findCar(addCarDto.number);
+  async addCar(addCarDto: AddCarDto): Promise<AddCarInterface> {
+    const findExistedCar = await this.carRepository.findCarByCarNumber(
+      addCarDto.number,
+    );
 
     if (findExistedCar) {
-      return 'This car has alredy been added!';
+      throw new ExistingDataException('This car has alredy been added!');
     }
 
     await this.carRepository.addCar(addCarDto);

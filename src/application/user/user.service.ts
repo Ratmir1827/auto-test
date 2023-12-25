@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { config } from 'dotenv';
-import { RegisterDto } from 'src/dto/user/register.dto';
+import { RegisterDto } from 'src/application/user/dto/register.dto';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from 'src/dto/user/login.dto';
-import { JwtService } from '@nestjs/jwt';
-import { ChangePassDto } from 'src/dto/user/change-password.dto';
-import { ChangeUsernameDto } from 'src/dto/user/change-username.dto';
-import { ChangeEmailDto } from 'src/dto/user/change-email.dto';
 import { UserRepository } from './user.repository';
+import { JwtService } from '@nestjs/jwt';
+import { ChangeEmailDto } from './dto/change-email.dto';
+import { ChangePassDto } from './dto/change-password.dto';
+import { ChangeUsernameDto } from './dto/change-username.dto';
+import { LoginDto } from './dto/login.dto';
+import { UserInterface } from './interfaces/user.interface';
+import { ExistingDataException } from '../../exceptions/existing-data.exceptions';
+import { UserLoginInterface } from './interfaces/user-login.interface';
+import { IncorrectDataException } from '../../exceptions/incorrect-data.exceptions';
 
 config();
 
@@ -18,8 +22,8 @@ export class UserService {
     private jwtService: JwtService,
   ) {}
 
-  async getUser(req) {
-    const findUser = await this.userRepository.findUserById(req.user.id);
+  async getUser(token): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserById(token.user.id);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
@@ -31,20 +35,22 @@ export class UserService {
     };
   }
 
-  async register(registerDto: RegisterDto) {
-    const findUser = await this.userRepository.findUser(registerDto.email);
+  async register(registerDto: RegisterDto): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserByEmail(
+      registerDto.email,
+    );
 
     if (findUser) {
-      return 'This user email has alredy been used!';
+      throw new ExistingDataException(
+        `The email: '${registerDto.email}' has already been used!`,
+      );
     }
 
     const password = bcrypt.hashSync(registerDto.password, 10);
     const email = registerDto.email;
     const username = registerDto.username;
 
-    const status = 'free';
-
-    await this.userRepository.createUser(password, email, username, status);
+    await this.userRepository.createUser(password, email, username);
 
     return {
       username: registerDto.username,
@@ -52,8 +58,8 @@ export class UserService {
     };
   }
 
-  async login(loginDto: LoginDto) {
-    const findUser = await this.userRepository.findUser(loginDto.email);
+  async login(loginDto: LoginDto): Promise<UserLoginInterface> {
+    const findUser = await this.userRepository.findUserByEmail(loginDto.email);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
@@ -65,7 +71,7 @@ export class UserService {
     );
 
     if (!comparePassword) {
-      return 'Incorrect password!';
+      throw new IncorrectDataException('Incorrect password!');
     }
 
     const payload = {
@@ -81,15 +87,18 @@ export class UserService {
     };
   }
 
-  async changePassword(req, changePassDto: ChangePassDto) {
-    const findUser = await this.userRepository.findUserById(req.user.id);
+  async changePassword(
+    token,
+    changePassDto: ChangePassDto,
+  ): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserById(token.user.id);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
     }
 
     if (findUser.email !== changePassDto.email) {
-      return 'Incorrect email!';
+      throw new IncorrectDataException('Incorrect email!');
     }
 
     const comparePassword = await bcrypt.compare(
@@ -98,11 +107,13 @@ export class UserService {
     );
 
     if (!comparePassword) {
-      return 'Incorrect password!';
+      throw new IncorrectDataException('Incorrect password!');
     }
 
     if (changePassDto.oldPassword === changePassDto.newPassword) {
-      return 'Change a new password!';
+      throw new IncorrectDataException(
+        'Matches were found in the old and new passwords, change new password!',
+      );
     }
 
     const newpass = bcrypt.hashSync(changePassDto.newPassword, 10);
@@ -116,15 +127,20 @@ export class UserService {
     };
   }
 
-  async changeUsername(req, changeUsernameDto: ChangeUsernameDto) {
-    const findUser = await this.userRepository.findUserById(req.user.id);
+  async changeUsername(
+    token,
+    changeUsernameDto: ChangeUsernameDto,
+  ): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserById(token.user.id);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
     }
 
     if (findUser.username === changeUsernameDto.username) {
-      return 'Change new username!';
+      throw new IncorrectDataException(
+        'Matches were found in the old and new username, change new username!',
+      );
     }
 
     const newUsername = changeUsernameDto.username;
@@ -133,21 +149,25 @@ export class UserService {
     await this.userRepository.updateUsername(newUsername, oldUsername);
 
     return {
-      newUsername: newUsername,
-      oldUsername: oldUsername,
+      username: newUsername,
       email: findUser.email,
     };
   }
 
-  async changeEmail(req, changeEmailDto: ChangeEmailDto) {
-    const findUser = await this.userRepository.findUserById(req.user.id);
+  async changeEmail(
+    token,
+    changeEmailDto: ChangeEmailDto,
+  ): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserById(token.user.id);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
     }
 
     if (findUser.email === changeEmailDto.email) {
-      return 'Change new email!';
+      throw new IncorrectDataException(
+        'Matches were found in the old and new email, change new email!',
+      );
     }
 
     const newEmail = changeEmailDto.email;
@@ -157,20 +177,21 @@ export class UserService {
       await this.userRepository.findExistedEmail(newEmail);
 
     if (findExistedEmail.length >= 1) {
-      return 'This email has alredy been used!';
+      throw new ExistingDataException(
+        `This email: '${newEmail}' has already been used!`,
+      );
     }
 
     await this.userRepository.updateEmail(newEmail, oldEmail);
 
     return {
       username: findUser.username,
-      newEmail: newEmail,
-      oldEmail: oldEmail,
+      email: newEmail,
     };
   }
 
-  async deleteUser(req) {
-    const findUser = await this.userRepository.findUserById(req.user.id);
+  async deleteUser(token): Promise<UserInterface> {
+    const findUser = await this.userRepository.findUserById(token.user.id);
 
     if (!findUser) {
       throw new NotFoundException('User not found!');
@@ -179,7 +200,8 @@ export class UserService {
     await this.userRepository.deleteUser(findUser.id);
 
     return {
-      deletedUser: findUser.username,
+      username: findUser.username,
+      email: findUser.email,
     };
   }
 }

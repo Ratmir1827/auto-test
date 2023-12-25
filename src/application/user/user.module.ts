@@ -12,8 +12,8 @@ import { UserRepository } from './user.repository';
     JwtModule.registerAsync({
       useFactory: async () => ({
         global: true,
-        secret: process.env.JWT_SECRET,
-        signOptions: { expiresIn: process.env.JWT_EXPERIENCE },
+        secret: process.env.JWT_SECRET || '1234secret',
+        signOptions: { expiresIn: process.env.JWT_EXPERIENCE || '3d' },
       }),
     }),
   ],

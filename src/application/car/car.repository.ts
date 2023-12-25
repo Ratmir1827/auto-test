@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { AddCarDto } from 'src/dto/car/add-car.dto';
+import { AddCarDto } from 'src/application/car/dto/add-car.dto';
+import { FindCarInterface } from './interfaces/find-car.interface';
+import { AddCarInterface } from './interfaces/add-car.interface';
 
 @Injectable()
 export class CarRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findCar(number: string) {
+  async findCarByCarNumber(number: string): Promise<FindCarInterface> {
     const find = await this.databaseService.query(
       'SELECT * FROM cars WHERE number = $1',
       [number],
@@ -15,7 +17,7 @@ export class CarRepository {
     return find[0];
   }
 
-  async findCarById(id: string) {
+  async findCarById(id: string): Promise<FindCarInterface> {
     const find = await this.databaseService.query(
       'SELECT * FROM cars WHERE id = $1',
       [id],
@@ -24,7 +26,7 @@ export class CarRepository {
     return find[0];
   }
 
-  async addCar(addCarDto: AddCarDto) {
+  async addCar(addCarDto: AddCarDto): Promise<AddCarInterface> {
     const name = addCarDto.name;
     const number = addCarDto.number;
     const status = 'free';

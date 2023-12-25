@@ -18,9 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "user:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/migrations/user/create_user_table.sql",
-    "car:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/migrations/car/create_car_table.sql",
-    "rent:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/migrations/rent/create_rent_table.sql"
+    "user:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/application/user/migration/create_user_table.sql",
+    "car:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/application/car/migration/create_car_table.sql",
+    "rent:migration": "psql -U postgres -h localhost -d postgres -a -f ./src/application/rent/migration/create_rent_table.sql"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -28,6 +28,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/mongoose": "^10.0.2",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^7.1.17",
     "@types/dotenv": "^8.2.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",

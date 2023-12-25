@@ -6,55 +6,71 @@ import {
   Post,
   Request,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { RegisterDto } from 'src/dto/user/register.dto';
-import { LoginDto } from 'src/dto/user/login.dto';
-import { ChangePassDto } from 'src/dto/user/change-password.dto';
-import { ChangeUsernameDto } from 'src/dto/user/change-username.dto';
-import { ChangeEmailDto } from 'src/dto/user/change-email.dto';
+import { RegisterDto } from 'src/application/user/dto/register.dto';
+import { ChangeEmailDto } from './dto/change-email.dto';
+import { ChangePassDto } from './dto/change-password.dto';
+import { ChangeUsernameDto } from './dto/change-username.dto';
+import { LoginDto } from './dto/login.dto';
+import { UserGuard } from 'src/guards/user.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('user')
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(UseGuards)
+  @UseGuards(UserGuard)
   @Get('get')
-  getUser(@Request() req) {
-    return this.userService.getUser(req);
+  @ApiOperation({ summary: 'Get user' })
+  getUser(@Request() token) {
+    return this.userService.getUser(token);
   }
 
   @Post('register')
+  @ApiOperation({ summary: 'Register user' })
   register(@Body() registerDto: RegisterDto) {
     return this.userService.register(registerDto);
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login user' })
   login(@Body() loginDto: LoginDto) {
     return this.userService.login(loginDto);
   }
 
-  @UseGuards(UseGuards)
+  @UseGuards(UserGuard)
   @Post('change/password')
-  changePassword(@Request() req, @Body() changePassDto: ChangePassDto) {
-    return this.userService.changePassword(req, changePassDto);
+  @ApiOperation({ summary: 'Change password' })
+  changePassword(@Request() token, @Body() changePassDto: ChangePassDto) {
+    return this.userService.changePassword(token, changePassDto);
   }
 
-  @UseGuards(UseGuards)
+  @UseGuards(UserGuard)
   @Post('change/username')
-  changeUsername(@Request() req, @Body() changeUsernameDto: ChangeUsernameDto) {
-    return this.userService.changeUsername(req, changeUsernameDto);
+  @ApiOperation({ summary: 'Change username' })
+  changeUsername(
+    @Request() token,
+    @Body() changeUsernameDto: ChangeUsernameDto,
+  ) {
+    return this.userService.changeUsername(token, changeUsernameDto);
   }
 
-  @UseGuards(UseGuards)
+  @UseGuards(UserGuard)
   @Post('change/email')
-  changeEmail(@Request() req, @Body() changeEmailDto: ChangeEmailDto) {
-    return this.userService.changeEmail(req, changeEmailDto);
+  @ApiOperation({ summary: 'Change email' })
+  changeEmail(@Request() token, @Body() changeEmailDto: ChangeEmailDto) {
+    return this.userService.changeEmail(token, changeEmailDto);
   }
 
-  @UseGuards(UseGuards)
+  @UseGuards(UserGuard)
   @Delete('delete')
-  deleteUser(@Request() req) {
-    return this.userService.deleteUser(req);
+  @ApiOperation({ summary: 'Delete user' })
+  deleteUser(@Request() token) {
+    return this.userService.deleteUser(token);
   }
 }
