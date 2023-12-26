@@ -31,16 +31,11 @@ export class CarRepository {
     const number = addCarDto.number;
     const status = 'free';
 
-    await this.databaseService.query(
-      'INSERT INTO cars (name, number, status) VALUES ($1, $2, $3)',
+    const create = await this.databaseService.query(
+      'INSERT INTO cars (name, number, status) VALUES ($1, $2, $3) RETURNING id, name, number, status',
       [name, number, status],
     );
 
-    const find = await this.databaseService.query(
-      'SELECT * FROM cars WHERE number = $1',
-      [number],
-    );
-
-    return find[0];
+    return create[0];
   }
 }

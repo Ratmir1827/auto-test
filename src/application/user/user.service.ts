@@ -50,11 +50,15 @@ export class UserService {
     const email = registerDto.email;
     const username = registerDto.username;
 
-    await this.userRepository.createUser(password, email, username);
+    const createUser = await this.userRepository.createUser(
+      password,
+      email,
+      username,
+    );
 
     return {
-      username: registerDto.username,
-      email: registerDto.email,
+      username: createUser.username,
+      email: createUser.email,
     };
   }
 
@@ -119,11 +123,14 @@ export class UserService {
     const newpass = bcrypt.hashSync(changePassDto.newPassword, 10);
     const oldpass = findUser.password;
 
-    await this.userRepository.updatePassword(newpass, oldpass);
+    const updatePassword = await this.userRepository.updatePassword(
+      newpass,
+      oldpass,
+    );
 
     return {
-      username: findUser.username,
-      email: findUser.email,
+      username: updatePassword.username,
+      email: updatePassword.email,
     };
   }
 
@@ -146,11 +153,14 @@ export class UserService {
     const newUsername = changeUsernameDto.username;
     const oldUsername = findUser.username;
 
-    await this.userRepository.updateUsername(newUsername, oldUsername);
+    const updateName = await this.userRepository.updateUsername(
+      newUsername,
+      oldUsername,
+    );
 
     return {
-      username: newUsername,
-      email: findUser.email,
+      username: updateName.username,
+      email: updateName.email,
     };
   }
 
@@ -182,11 +192,14 @@ export class UserService {
       );
     }
 
-    await this.userRepository.updateEmail(newEmail, oldEmail);
+    const updateEmail = await this.userRepository.updateEmail(
+      newEmail,
+      oldEmail,
+    );
 
     return {
-      username: findUser.username,
-      email: newEmail,
+      username: updateEmail.username,
+      email: updateEmail.email,
     };
   }
 
@@ -197,11 +210,11 @@ export class UserService {
       throw new NotFoundException('User not found!');
     }
 
-    await this.userRepository.deleteUser(findUser.id);
+    const deleteUser = await this.userRepository.deleteUser(findUser.id);
 
     return {
-      username: findUser.username,
-      email: findUser.email,
+      username: deleteUser.username,
+      email: deleteUser.email,
     };
   }
 }

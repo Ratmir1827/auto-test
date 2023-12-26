@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateUserInterface } from './interfaces/create-user.interface';
 import { FindUserInterface } from './interfaces/find-user.interface';
+import { UserInterface } from './interfaces/user.interface';
 
 @Injectable()
 export class UserRepository {
@@ -24,7 +25,7 @@ export class UserRepository {
     username: string,
   ): Promise<CreateUserInterface> {
     const save = await this.databaseService.query(
-      'INSERT INTO users (username, email, password, status) VALUES ($1, $2, $3)',
+      'INSERT INTO users (username, email, password, status) VALUES ($1, $2, $3) RETURNING id, username, email, password ',
       [username, email, password],
     );
 
@@ -49,36 +50,45 @@ export class UserRepository {
     return findExistedEmail;
   }
 
-  async updatePassword(newpass: string, oldpass: string): Promise<[]> {
+  async updatePassword(
+    newpass: string,
+    oldpass: string,
+  ): Promise<UserInterface> {
     const update = await this.databaseService.query(
-      'UPDATE users SET password = $1 WHERE password = $2',
+      'UPDATE users SET password = $1 WHERE password = $2 RETURNING username, email',
       [newpass, oldpass],
     );
 
     return update[0];
   }
 
-  async updateUsername(newUsername: string, oldUsername: string): Promise<[]> {
+  async updateUsername(
+    newUsername: string,
+    oldUsername: string,
+  ): Promise<UserInterface> {
     const update = await this.databaseService.query(
-      'UPDATE users SET username = $1 WHERE username = $2',
+      'UPDATE users SET username = $1 WHERE username = $2 RETURNING username, email',
       [newUsername, oldUsername],
     );
 
     return update[0];
   }
 
-  async updateEmail(newEmail: string, oldEmail: string): Promise<[]> {
+  async updateEmail(
+    newEmail: string,
+    oldEmail: string,
+  ): Promise<UserInterface> {
     const update = await this.databaseService.query(
-      'UPDATE users SET email = $1 WHERE email = $2',
+      'UPDATE users SET email = $1 WHERE email = $2 RETURNING username, email',
       [newEmail, oldEmail],
     );
 
     return update[0];
   }
 
-  async deleteUser(id: string): Promise<[]> {
+  async deleteUser(id: string): Promise<UserInterface> {
     const deleteUser = await this.databaseService.query(
-      'DELETE FROM users WHERE id = $1',
+      'DELETE FROM users WHERE id = $1 RETURNING username, email',
       [id],
     );
 
